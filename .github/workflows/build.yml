@@ -20,12 +20,37 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@2.0.17
 
-      - name: Compile OnStep
+      - name: Build ESP32 Firmware
         run: |
-          mkdir -p build_out
-          SKETCH_PATH=$(find . -name "OnStep.ino" -print -quit)
-          echo "Compiling sketch found at: $SKETCH_PATH"
-          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out "$SKETCH_PATH"
+          set -e
+          rm -rf OnStep build_out
+          mkdir -p OnStep build_out
+
+          INO_FILE=$(find . -maxdepth 4 -not -path './OnStep/*' -not -path './build_out/*' -name "OnStep.ino" -print -quit)
+          if [ -z "$INO_FILE" ]; then
+            INO_FILE=$(find . -maxdepth 4 -not -path './OnStep/*' -not -path './build_out/*' -name "*.ino" -print -quit)
+          fi
+
+          if [ -z "$INO_FILE" ]; then
+            echo "NO_INO_FOUND"
+            ls -la
+            exit 1
+          fi
+
+          INO_DIR=$(dirname "$INO_FILE")
+          echo "Found sketch: $INO_FILE in $INO_DIR"
+
+          if [ "$INO_DIR" = "." ]; then
+            find . -maxdepth 1 -not -name '.git' -not -name '.github' -not -name 'OnStep' -not -name 'build_out' -exec cp -r {} OnStep/ \;
+          else
+            cp -r "$INO_DIR"/* OnStep/
+          fi
+
+          if [ ! -f "OnStep/OnStep.ino" ]; then
+            mv "OnStep/$(basename "$INO_FILE")" "OnStep/OnStep.ino"
+          fi
+
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out OnStep/OnStep.ino
 
       - name: Upload BIN artifact
         if: always()
@@ -34,6 +59,4 @@ jobs:
           name: onstep-esp32-bin
           path: build_out/*.bin
           if-no-files-found: ignore
-
-
           
