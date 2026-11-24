@@ -10,32 +10,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Organize OnStep sketch folder
+      - name: Prepare OnStep folder and src structure
         run: |
-          mkdir -p /tmp/onstep_src
+          mkdir -p /tmp/onstep_build/OnStep/src/sd_drivers
+          mkdir -p /tmp/onstep_build/OnStep/src/HAL
+          mkdir -p /tmp/onstep_build/OnStep/src/lib
+          mkdir -p /tmp/onstep_build/OnStep/src/pinmaps
+
           shopt -s dotglob
           for item in *; do
             if [ "$item" != ".github" ] && [ "$item" != "build_out" ]; then
-              mv "$item" /tmp/onstep_src/
+              cp -r "$item" /tmp/onstep_build/OnStep/
             fi
           done
-          mkdir -p /tmp/onstep_src/OnStep
-          mv /tmp/onstep_src/* /tmp/onstep_src/OnStep/ 2>/dev/null || true
+
+          [ -f /tmp/onstep_build/OnStep/Models.h ] && cp /tmp/onstep_build/OnStep/Models.h /tmp/onstep_build/OnStep/src/sd_drivers/Models.h
+          [ -f /tmp/onstep_build/OnStep/HAL.h ] && cp /tmp/onstep_build/OnStep/HAL.h /tmp/onstep_build/OnStep/src/HAL/HAL.h
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v1
 
-      - name: Configure and install ESP32 core
+      - name: Install ESP32 2.0.17 core
         run: |
           arduino-cli config init
           arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core update-index
-          arduino-cli core install esp32:esp32
+          arduino-cli core install esp32:esp32@2.0.17
 
-      - name: Compile OnStep
+      - name: Compile OnStep for ESP32
         run: |
           mkdir -p build_out
-          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out /tmp/onstep_src/OnStep/OnStep.ino
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out /tmp/onstep_build/OnStep/OnStep.ino
 
       - name: Upload BIN artifact
         if: always()
@@ -44,5 +49,4 @@ jobs:
           name: onstep-esp32-bin
           path: build_out/*.bin
           if-no-files-found: ignore
-
           
