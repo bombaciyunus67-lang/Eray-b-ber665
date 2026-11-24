@@ -10,24 +10,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare OnStep folder and src structure
+      - name: Organize OnStep Workspace
         run: |
-          mkdir -p /tmp/onstep_build/OnStep/src/sd_drivers
-          mkdir -p /tmp/onstep_build/OnStep/src/HAL
-          mkdir -p /tmp/onstep_build/OnStep/src/lib
-          mkdir -p /tmp/onstep_build/OnStep/src/pinmaps
-
+          mkdir -p /tmp/onstep_ws
           shopt -s dotglob
           for item in *; do
             if [ "$item" != ".github" ] && [ "$item" != "build_out" ]; then
-              cp -r "$item" /tmp/onstep_build/OnStep/
+              cp -r "$item" /tmp/onstep_ws/
             fi
           done
-
-          [ -f /tmp/onstep_build/OnStep/Models.h ] && cp /tmp/onstep_build/OnStep/Models.h /tmp/onstep_build/OnStep/src/sd_drivers/Models.h
-          [ -f /tmp/onstep_build/OnStep/HAL.h ] && cp /tmp/onstep_build/OnStep/HAL.h /tmp/onstep_build/OnStep/src/HAL/HAL.h
-          cp /tmp/onstep_build/OnStep/Pins.*.h /tmp/onstep_build/OnStep/src/pinmaps/ 2>/dev/null || true
-          cp -r /tmp/onstep_build/OnStep/src/* /tmp/onstep_build/OnStep/src/ 2>/dev/null || true
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v1
@@ -39,10 +30,10 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@2.0.17
 
-      - name: Compile OnStep for ESP32
+      - name: Compile OnStep
         run: |
           mkdir -p build_out
-          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out /tmp/onstep_build/OnStep/OnStep.ino
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out /tmp/onstep_ws/OnStep.ino
 
       - name: Upload BIN artifact
         if: always()
@@ -51,5 +42,4 @@ jobs:
           name: onstep-esp32-bin
           path: build_out/*.bin
           if-no-files-found: ignore
-
           
