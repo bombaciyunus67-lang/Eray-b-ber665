@@ -10,6 +10,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Organize OnStep sketch folder
+        run: |
+          mkdir -p /tmp/onstep_src
+          shopt -s dotglob
+          for item in *; do
+            if [ "$item" != ".github" ] && [ "$item" != "build_out" ]; then
+              mv "$item" /tmp/onstep_src/
+            fi
+          done
+          mkdir -p /tmp/onstep_src/OnStep
+          mv /tmp/onstep_src/* /tmp/onstep_src/OnStep/ 2>/dev/null || true
+
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v1
 
@@ -23,11 +35,13 @@ jobs:
       - name: Compile OnStep
         run: |
           mkdir -p build_out
-          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out .
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build_out /tmp/onstep_src/OnStep/OnStep.ino
 
       - name: Upload BIN artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: onstep-esp32-bin
           path: build_out/*.bin
+          if-no-files-found: ignore
           
