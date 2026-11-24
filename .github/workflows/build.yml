@@ -26,6 +26,8 @@ jobs:
 
           [ -f /tmp/onstep_build/OnStep/Models.h ] && cp /tmp/onstep_build/OnStep/Models.h /tmp/onstep_build/OnStep/src/sd_drivers/Models.h
           [ -f /tmp/onstep_build/OnStep/HAL.h ] && cp /tmp/onstep_build/OnStep/HAL.h /tmp/onstep_build/OnStep/src/HAL/HAL.h
+          cp /tmp/onstep_build/OnStep/Pins.*.h /tmp/onstep_build/OnStep/src/pinmaps/ 2>/dev/null || true
+          cp -r /tmp/onstep_build/OnStep/src/* /tmp/onstep_build/OnStep/src/ 2>/dev/null || true
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v1
